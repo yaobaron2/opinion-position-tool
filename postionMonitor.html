@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仓位管理工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            /* 科技感明亮主题变量 */
+            --bg-color: #f0f4f8;
+            --card-bg: linear-gradient(145deg, #ffffff, #f5f7fa);
+            --text-color: #1a202c;
+            --secondary-text: #718096;
+            --border-color: #e2e8f0;
+            --primary-color: #007aff;
+            --primary-hover: #0056cc;
+            --header-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 244, 248, 0.95));
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 6px 10px rgba(0, 0, 0, 0.05);
+            --table-header-bg: linear-gradient(180deg, #f8fafc, #f1f5f9);
+            --table-row-hover: #f7fafc;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --accent-gradient: linear-gradient(90deg, #007aff, #00c6ff);
+            --card-border: 1px solid rgba(255, 255, 255, 0.7);
+            --filter-bg: linear-gradient(135deg, #ffffff, #f8fafc);
+        }
+        
+        .dark-theme {
+            /* 科技感暗黑主题变量 */
+            --bg-color: #0f172a;
+            --card-bg: linear-gradient(145deg, #1e293b, #0f172a);
+            --text-color: #f1f5f9;
+            --secondary-text: #94a3b8;
+            --border-color: #334155;
+            --primary-color: #3b82f6;
+            --primary-hover: #60a5fa;
+            --header-bg: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 6px 10px rgba(0, 0, 0, 0.3);
+            --table-header-bg: linear-gradient(180deg, #1e293b, #0f172a);
+            --table-row-hover: #1e293b;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --accent-gradient: linear-gradient(90deg, #3b82f6, #06b6d4);
+            --card-border: 1px solid rgba(255, 255, 255, 0.1);
+            --filter-bg: linear-gradient(135deg, #1e293b, #0f172a);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        
+        body {
+            background: var(--bg-color);
+            color: var(--text-color);
+            transition: background 0.3s ease, color 0.3s ease;
+            min-height: 100vh;
+            padding-bottom: 40px;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 10% 20%, rgba(0, 122, 255, 0.05) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(0, 198, 255, 0.05) 0%, transparent 20%);
+            z-index: -1;
+        }
+        
+        .dark-theme body::before {
+            background: 
+                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.05) 0%, transparent 20%);
+        }
+        
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        header {
+            background: var(--header-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            padding: 20px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: var(--card-border);
+            margin-bottom: 24px;
+            box-shadow: var(--shadow);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        h1 {
+            font-size: 32px;
+            font-weight: 800;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 2px 10px rgba(0, 122, 255, 0.2);
+        }
+        
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 10px 16px;
+            border-radius: 12px;
+            background: var(--card-bg);
+            border: var(--card-border);
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+        
+        .theme-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        }
+        
+        .theme-icon {
+            font-size: 20px;
+        }
+        
+        .input-section {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+            border: var(--card-border);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .input-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--accent-gradient);
+        }
+        
+        .input-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .input-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        input {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 0;
+        }
+        
+        button {
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        
+        .primary-btn {
+            background: var(--accent-gradient);
+            color: white;
+            flex: 1;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        }
+        
+        .primary-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 122, 255, 0.4);
+        }
+        
+        .secondary-btn {
+            background: var(--filter-bg);
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+        }
+        
+        .secondary-btn:hover {
+            background: rgba(0, 122, 255, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .filter-btn {
+            background: var(--filter-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            flex: 0 0 auto;
+            padding: 10px 14px;
+        }
+        
+        .filter-btn:hover {
+            background: var(--table-row-hover);
+            transform: translateY(-2px);
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 60px;
+            color: var(--secondary-text);
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(0, 122, 255, 0.1);
+            border-top: 4px solid;
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+        
+        .spinner::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border-radius: 50%;
+            border: 4px solid transparent;
+            border-top: 4px solid rgba(0, 122, 255, 0.3);
+            animation: spin 1.5s linear infinite reverse;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .data-section {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        
+        @media (min-width: 1200px) {
+            .data-section {
+                flex-direction: row;
+            }
+            
+            .chart-container {
+                flex: 1;
+            }
+            
+            .table-container {
+                flex: 2;
+            }
+        }
+        
+        .chart-container, .table-container {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            padding: 24px;
+            border: var(--card-border);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .chart-container::before, .table-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--accent-gradient);
+        }
+        
+        .chart-container {
+            display: flex;
+            flex-direction: column;
+            height: 680px;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .section-title::before {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 80px;
+            height: 3px;
+            background: var(--accent-gradient);
+            border-radius: 3px;
+        }
+        
+        .total-info {
+            font-size: 13px;
+            color: var(--secondary-text);
+            font-weight: 500;
+            background: var(--filter-bg);
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            table-layout: fixed;
+        }
+        
+        th {
+            text-align: left;
+            padding: 12px 8px;
+            font-weight: 600;
+            font-size: 11px;
+            color: var(--secondary-text);
+            background: var(--table-header-bg);
+            border-bottom: 2px solid var(--border-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        
+        td {
+            padding: 12px 8px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 12px;
+            line-height: 1.4;
+            vertical-align: top;
+        }
+        
+        tr:hover {
+            background-color: var(--table-row-hover);
+        }
+        
+        .market-title {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .market-title:hover {
+            text-decoration: underline;
+            color: var(--primary-hover);
+        }
+        
+        .positive {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+        
+        .negative {
+            color: var(--danger-color);
+            font-weight: 600;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+        }
+        
+        .page-btn {
+            padding: 8px 12px;
+            background: var(--filter-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        .page-btn:hover {
+            background: var(--table-row-hover);
+            transform: translateY(-2px);
+        }
+        
+        .page-btn.active {
+            background: var(--accent-gradient);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
+        }
+        
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .error-message {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1));
+            color: var(--danger-color);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: none;
+            border-left: 4px solid var(--danger-color);
+            box-shadow: var(--shadow);
+        }
+        
+        .error-message.active {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--secondary-text);
+        }
+        
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            color: var(--secondary-text);
+            font-size: 13px;
+        }
+        
+        /* 优化表格列宽 */
+        .market-title-col {
+            width: 30%;
+            min-width: 200px;
+            word-wrap: break-word;
+            white-space: normal;
+            line-height: 1.5;
+        }
+        
+        .outcome-col {
+            width: 6%;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .value-col {
+            width: 9%;
+            min-width: 70px;
+        }
+        
+        .shares-col {
+            width: 9%;
+            min-width: 70px;
+        }
+        
+        .frozen-col {
+            width: 10%;
+            min-width: 80px;
+        }
+        
+        .avg-price-col {
+            width: 9%;
+            min-width: 70px;
+        }
+        
+        .pnl-col {
+            width: 9%;
+            min-width: 70px;
+        }
+        
+        .pnl-percent-col {
+            width: 8%;
+            min-width: 65px;
+            text-align: center;
+        }
+        
+        .chart-wrapper {
+            flex: 1;
+            position: relative;
+            min-height: 380px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        
+        .chart-container {
+            overflow: visible;
+        }
+        
+        .position-chart-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+        
+        .position-chart-container:hover {
+            transform: scale(1.05);
+        }
+        
+        .outcome-yes {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+        
+        .outcome-no {
+            color: var(--danger-color);
+            font-weight: 600;
+        }
+        
+        .outcome-unknown {
+            color: var(--warning-color);
+            font-weight: 600;
+        }
+        
+        .stats-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 14px;
+            background: var(--filter-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .stat-item {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            background: var(--bg-color);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .stat-label {
+            font-size: 11px;
+            color: var(--secondary-text);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .filter-indicator {
+            display: inline-block;
+            margin-left: 8px;
+            padding: 2px 8px;
+            background: var(--accent-gradient);
+            color: white;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .input-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .input-filters .input-group {
+            flex: 1;
+            min-width: 180px;
+        }
+        
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            padding: 12px 0 0 0;
+        }
+        
+        .page-size-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .page-size-label {
+            font-size: 12px;
+            color: var(--secondary-text);
+        }
+        
+        .page-size-select {
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        .page-size-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .table-wrapper {
+            overflow-x: auto;
+            margin-bottom: 8px;
+        }
+        
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <h1>opinion仓位辅助管理工具</h1>
+                <div class="theme-toggle" id="themeToggle">
+                    <span class="theme-icon" id="themeIcon">🌙</span>
+                    <span id="themeText">深色模式</span>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <main class="container">
+        <div class="error-message" id="errorMessage"></div>
+        
+        <div class="input-section">
+            <div class="input-filters">
+                <div class="input-group">
+                    <label for="apiKey">APIKey</label>
+                    <input type="text" id="apiKey" placeholder="请输入您的API Key">
+                </div>
+                <div class="input-group">
+                    <label for="walletAddress">钱包地址(头像中的钱包地址)</label>
+                    <input type="text" id="walletAddress" placeholder="请输入钱包地址，如：0x6888...8888">
+                </div>
+                <div class="input-group">
+                    <label for="filterAmount">过滤价值金额</label>
+                    <input type="number" id="filterAmount" placeholder="仅显示大于此价值金额的仓位" min="0" step="0.01">
+                </div>
+            </div>
+            
+            <div class="button-row">
+                <button class="primary-btn" id="fetchDataBtn">
+                    <span>📊</span>
+                    <span>查询仓位数据</span>
+                </button>
+                <button class="secondary-btn" id="clearDataBtn">
+                    <span>🗑️</span>
+                    <span>清除数据</span>
+                </button>
+                <button class="filter-btn" id="applyFilterBtn">
+                    <span>应用过滤</span>
+                </button>
+                <button class="filter-btn" id="clearFilterBtn">
+                    <span>清除过滤</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="loading" id="loadingIndicator">
+            <div class="spinner"></div>
+            <p>正在获取仓位数据，请稍候...</p>
+        </div>
+        
+        <div class="data-section" id="dataSection" style="display: none;">
+            <div class="table-container">
+                <h2 class="section-title">
+                    仓位列表
+                    <span class="total-info" id="totalInfo">共 0 个仓位</span>
+                </h2>
+                
+                <div class="stats-bar" id="statsBar">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalValue">$0.00</div>
+                        <div class="stat-label">总价值</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="avgValue">$0.00</div>
+                        <div class="stat-label">平均价值</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalPnl">$0.00</div>
+                        <div class="stat-label">总盈亏</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="positionsCount">0</div>
+                        <div class="stat-label">仓位数量</div>
+                    </div>
+                </div>
+                
+                <div class="table-wrapper">
+                    <table id="positionsTable">
+                        <thead>
+                            <tr>
+                                <th class="market-title-col">市场标题</th>
+                                <th class="outcome-col">方向</th>
+                                <th class="value-col">价值</th>
+                                <th class="shares-col">份额</th>
+                                <th class="frozen-col">挂单中份额</th>
+                                <th class="avg-price-col">买入均价</th>
+                                <th class="pnl-col">盈亏</th>
+                                <th class="pnl-percent-col">盈亏百分比</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- 数据将通过JavaScript动态填充 -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="pagination-controls">
+                    <div class="page-size-selector">
+                        <span class="page-size-label">每页显示:</span>
+                        <select class="page-size-select" id="pageSizeSelect">
+                            <option value="10" selected>10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+                    <div class="pagination" id="pagination">
+                        <!-- 分页按钮将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h2 class="section-title">仓位分布</h2>
+                <div class="chart-wrapper">
+                    <div class="position-chart-container">
+                        <canvas id="positionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="empty-state" id="emptyState">
+            <div class="empty-icon">📊</div>
+            <h3>暂无仓位数据</h3>
+            <p>请输入apikey和钱包地址，然后点击"查询仓位数据"按钮</p>
+        </div>
+    </main>
+    
+    <footer class="container">
+        <p>仓位管理统计工具 &copy; 2023 | 数据来源于Opinion Trade API</p>
+    </footer>
+
+    <script>
+        // 全局变量
+        let allPositions = [];
+        let filteredPositions = [];
+        let currentPage = 1;
+        let itemsPerPage = 10; // 默认每页显示10条
+        let positionChart = null;
+        let isDarkTheme = false;
+        let filterAmount = 0;
+        
+        // DOM元素
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const themeText = document.getElementById('themeText');
+        const apiKeyInput = document.getElementById('apiKey');
+        const walletAddressInput = document.getElementById('walletAddress');
+        const filterAmountInput = document.getElementById('filterAmount');
+        const pageSizeSelect = document.getElementById('pageSizeSelect');
+        const fetchDataBtn = document.getElementById('fetchDataBtn');
+        const clearDataBtn = document.getElementById('clearDataBtn');
+        const applyFilterBtn = document.getElementById('applyFilterBtn');
+        const clearFilterBtn = document.getElementById('clearFilterBtn');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const errorMessage = document.getElementById('errorMessage');
+        const dataSection = document.getElementById('dataSection');
+        const emptyState = document.getElementById('emptyState');
+        const totalInfo = document.getElementById('totalInfo');
+        const statsBar = document.getElementById('statsBar');
+        const totalValueElement = document.getElementById('totalValue');
+        const avgValueElement = document.getElementById('avgValue');
+        const totalPnlElement = document.getElementById('totalPnl');
+        const positionsCountElement = document.getElementById('positionsCount');
+        const tableBody = document.getElementById('tableBody');
+        const pagination = document.getElementById('pagination');
+        
+        // 主题切换
+        themeToggle.addEventListener('click', () => {
+            isDarkTheme = !isDarkTheme;
+            
+            if (isDarkTheme) {
+                document.body.classList.add('dark-theme');
+                themeIcon.textContent = '☀️';
+                themeText.textContent = '浅色模式';
+            } else {
+                document.body.classList.remove('dark-theme');
+                themeIcon.textContent = '🌙';
+                themeText.textContent = '深色模式';
+            }
+            
+            // 如果图表已创建，重新渲染以适应新主题
+            if (positionChart) {
+                updateChartTheme();
+                positionChart.update();
+            }
+            
+            // 保存主题设置
+            localStorage.setItem('portfolio-theme', isDarkTheme ? 'dark' : 'light');
+        });
+        
+        // 更新每页显示条数
+        pageSizeSelect.addEventListener('change', () => {
+            itemsPerPage = parseInt(pageSizeSelect.value);
+            currentPage = 1; // 重置到第一页
+            if (filteredPositions.length > 0) {
+                renderTablePage(currentPage);
+                renderPagination();
+            }
+        });
+        
+        // 更新图表主题
+        function updateChartTheme() {
+            if (!positionChart) return;
+            
+            const isDark = document.body.classList.contains('dark-theme');
+            const textColor = isDark ? '#f1f5f9' : '#1a202c';
+            const gridColor = isDark ? '#334155' : '#e2e8f0';
+            
+            positionChart.options.plugins.legend.display = false;
+            positionChart.options.scales.r.pointLabels.color = textColor;
+            positionChart.options.scales.r.grid.color = gridColor;
+            positionChart.options.scales.r.ticks.color = textColor;
+        }
+        
+        // 获取数据
+        fetchDataBtn.addEventListener('click', async () => {
+            const apiKey = apiKeyInput.value.trim();
+            const walletAddress = walletAddressInput.value.trim();
+            
+            // 验证输入
+            if (!apiKey) {
+                showError('请输入API Key');
+                return;
+            }
+            
+            if (!walletAddress) {
+                showError('请输入钱包地址');
+                return;
+            }
+            
+            // 显示加载指示器
+            loadingIndicator.classList.add('active');
+            errorMessage.classList.remove('active');
+            dataSection.style.display = 'none';
+            emptyState.style.display = 'none';
+            
+            try {
+                // 清空之前的数据
+                allPositions = [];
+                filteredPositions = [];
+                filterAmount = 0;
+                filterAmountInput.value = '';
+                
+                // 获取第一页数据
+                const firstPageData = await fetchPositions(apiKey, walletAddress, 1);
+                
+                if (!firstPageData || !firstPageData.result) {
+                    throw new Error(firstPageData?.errmsg || '无法获取仓位数据');
+                }
+                
+                // 获取所有数据
+                const totalItems = firstPageData.result.total;
+                const totalPages = Math.ceil(totalItems / 20);
+                
+                allPositions = [...firstPageData.result.list];
+                
+                // 如果有多页，获取剩余页的数据
+                if (totalPages > 1) {
+                    const pagePromises = [];
+                    for (let page = 2; page <= totalPages; page++) {
+                        pagePromises.push(fetchPositions(apiKey, walletAddress, page));
+                    }
+                    
+                    const pageResults = await Promise.all(pagePromises);
+                    
+                    pageResults.forEach(result => {
+                        if (result && result.result && result.result.list) {
+                            allPositions = [...allPositions, ...result.result.list];
+                        }
+                    });
+                }
+                
+                // 处理数据：按价值排序
+                allPositions.sort((a, b) => {
+                    return parseFloat(b.currentValueInQuoteToken) - parseFloat(a.currentValueInQuoteToken);
+                });
+                
+                // 应用当前过滤
+                applyFilter();
+                
+                // 显示数据
+                displayData();
+                
+            } catch (error) {
+                console.error('获取数据失败:', error);
+                showError(`获取数据失败: ${error.message}`);
+                loadingIndicator.classList.remove('active');
+            }
+        });
+        
+        // 应用过滤
+        function applyFilter() {
+            filterAmount = parseFloat(filterAmountInput.value) || 0;
+            
+            if (filterAmount > 0) {
+                filteredPositions = allPositions.filter(position => {
+                    return parseFloat(position.currentValueInQuoteToken) >= filterAmount;
+                });
+            } else {
+                filteredPositions = [...allPositions];
+            }
+            
+            // 按价值排序
+            filteredPositions.sort((a, b) => {
+                return parseFloat(b.currentValueInQuoteToken) - parseFloat(a.currentValueInQuoteToken);
+            });
+            
+            // 重置分页
+            currentPage = 1;
+        }
+        
+        // 应用过滤按钮
+        applyFilterBtn.addEventListener('click', () => {
+            if (allPositions.length === 0) {
+                showError('请先获取仓位数据');
+                return;
+            }
+            
+            applyFilter();
+            displayData();
+            
+            // 更新过滤指示器
+            if (filterAmount > 0) {
+                totalInfo.innerHTML = `共 ${filteredPositions.length} 个仓位 <span class="filter-indicator">过滤: >$${filterAmount.toFixed(2)}</span>`;
+            }
+        });
+        
+        // 清除过滤按钮
+        clearFilterBtn.addEventListener('click', () => {
+            filterAmountInput.value = '';
+            applyFilter();
+            displayData();
+        });
+        
+        // 获取仓位数据
+        async function fetchPositions(apiKey, walletAddress, page) {
+            const url = `https://openapi.opinion.trade/openapi/positions/user/${walletAddress}?page=${page}&limit=20`;
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': apiKey
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('请求失败:', error);
+                throw error;
+            }
+        }
+        
+        // 显示错误信息
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('active');
+            
+            // 5秒后自动隐藏错误信息
+            setTimeout(() => {
+                errorMessage.classList.remove('active');
+            }, 5000);
+        }
+        
+        // 显示数据
+        function displayData() {
+            loadingIndicator.classList.remove('active');
+            
+            if (!filteredPositions || filteredPositions.length === 0) {
+                emptyState.style.display = 'block';
+                dataSection.style.display = 'none';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            dataSection.style.display = 'flex';
+            
+            // 更新总数信息
+            if (filterAmount > 0) {
+                totalInfo.innerHTML = `共 ${filteredPositions.length} 个仓位 <span class="filter-indicator">过滤: >$${filterAmount.toFixed(2)}</span>`;
+            } else {
+                totalInfo.textContent = `共 ${filteredPositions.length} 个仓位`;
+            }
+            
+            // 更新统计数据
+            updateStats();
+            
+            // 渲染图表
+            renderChart();
+            
+            // 渲染表格和分页
+            renderTablePage(currentPage);
+            renderPagination();
+        }
+        
+        // 更新统计数据
+        function updateStats() {
+            let totalValue = 0;
+            let totalPnl = 0;
+            
+            filteredPositions.forEach(position => {
+                totalValue += parseFloat(position.currentValueInQuoteToken);
+                totalPnl += parseFloat(position.unrealizedPnl);
+            });
+            
+            const avgValue = filteredPositions.length > 0 ? totalValue / filteredPositions.length : 0;
+            
+            totalValueElement.textContent = `$${totalValue.toFixed(2)}`;
+            avgValueElement.textContent = `$${avgValue.toFixed(2)}`;
+            totalPnlElement.textContent = `$${totalPnl.toFixed(2)}`;
+            totalPnlElement.className = `stat-value ${totalPnl >= 0 ? 'positive' : 'negative'}`;
+            positionsCountElement.textContent = filteredPositions.length;
+        }
+        
+        // 渲染图表
+        function renderChart() {
+            const chartCanvas = document.getElementById('positionChart');
+            const ctx = chartCanvas.getContext('2d');
+            
+            // 准备数据：大于1美元的分类展示，小于1美元的归为"其他"
+            const largePositions = [];
+            let otherTotal = 0;
+            let otherCount = 0;
+            
+            filteredPositions.forEach(position => {
+                const value = parseFloat(position.currentValueInQuoteToken);
+                
+                if (value >= 1) {
+                    // 构建市场标题（与表格相同）
+                    let marketTitle = '';
+                    if (position.rootMarketTitle) {
+                        marketTitle = `${position.rootMarketTitle} ---- ${position.marketTitle}`;
+                    } else {
+                        marketTitle = position.marketTitle;
+                    }
+                    
+                    largePositions.push({
+                        fullMarketTitle: marketTitle,
+                        value: value,
+                        outcome: position.outcome
+                    });
+                } else {
+                    otherTotal += value;
+                    otherCount++;
+                }
+            });
+            
+            // 按价值排序并取前8个最大的
+            largePositions.sort((a, b) => b.value - a.value);
+            let topPositions = largePositions.slice(0, 8);
+            
+            // 如果有其他仓位，添加到数据中
+            if (otherTotal > 0) {
+                topPositions.push({
+                    fullMarketTitle: `价值小于1美元的仓位，共${otherCount}个`,
+                    value: otherTotal,
+                    outcome: '其他'
+                });
+            }
+            
+            // 如果数据太少，直接显示所有
+            if (topPositions.length < 3 && filteredPositions.length > 0) {
+                topPositions = filteredPositions.slice(0, Math.min(8, filteredPositions.length)).map(position => {
+                    // 构建市场标题（与表格相同）
+                    let marketTitle = '';
+                    if (position.rootMarketTitle) {
+                        marketTitle = `${position.rootMarketTitle} ---- ${position.marketTitle}`;
+                    } else {
+                        marketTitle = position.marketTitle;
+                    }
+                    
+                    return {
+                        fullMarketTitle: marketTitle,
+                        value: parseFloat(position.currentValueInQuoteToken),
+                        outcome: position.outcome
+                    };
+                });
+            }
+            
+            // 准备图表数据 - 使用完整标题但只显示前20个字符
+            const labels = topPositions.map(item => {
+                const shortTitle = item.fullMarketTitle.length > 20 
+                    ? item.fullMarketTitle.substring(0, 20) + '...' 
+                    : item.fullMarketTitle;
+                return shortTitle;
+            });
+            
+            const data = topPositions.map(item => item.value);
+            const backgroundColors = generateColors(topPositions.length);
+            
+            // 如果已有图表实例，销毁它
+            if (positionChart) {
+                positionChart.destroy();
+            }
+            
+            // 获取当前主题颜色
+            const isDark = document.body.classList.contains('dark-theme');
+            const textColor = isDark ? '#f1f5f9' : '#1a202c';
+            
+            // 创建新图表 - 使用实心饼图
+            positionChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderColor: isDark ? '#1e293b' : '#ffffff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false // 不显示图例
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    const fullMarketTitle = topPositions[context.dataIndex]?.fullMarketTitle || '';
+                                    const outcome = topPositions[context.dataIndex]?.outcome || '';
+                                    
+                                    // 返回工具提示内容，使用完整的市场标题
+                                    if (fullMarketTitle) {
+                                        return [
+                                            `${fullMarketTitle}`,
+                                            outcome ? `方向: ${outcome}` : '',
+                                            `价值: $${value.toFixed(2)}`,
+                                            `占比: ${percentage}%`
+                                        ];
+                                    }
+                                    
+                                    return [
+                                        `${context.label}`,
+                                        `价值: $${value.toFixed(2)}`,
+                                        `占比: ${percentage}%`
+                                    ];
+                                }
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            titleFont: {
+                                size: 14
+                            },
+                            padding: 12,
+                            backgroundColor: isDark ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+                            titleColor: textColor,
+                            bodyColor: textColor,
+                            borderColor: isDark ? '#334155' : '#e2e8f0',
+                            borderWidth: 1
+                        }
+                    },
+                    animation: {
+                        animateScale: true,
+                        animateRotate: true
+                    },
+                    hover: {
+                        mode: 'nearest',
+                        intersect: true
+                    }
+                }
+            });
+        }
+        
+        // 生成颜色数组
+        function generateColors(count) {
+            const techColors = [
+                '#007aff', '#00c6ff', '#5ac8fa', '#64d2ff', '#34c759',
+                '#30d158', '#ff9500', '#ff9f0a', '#ff2d55', '#ff375f',
+                '#af52de', '#bf5af2', '#5856d6', '#5e5ce6', '#ffcc00',
+                '#ffd60a', '#32d74b', '#0a84ff', '#5e5ce6', '#64d2ff'
+            ];
+            
+            // 如果需要的颜色多于预设颜色，生成渐变色
+            if (count <= techColors.length) {
+                return techColors.slice(0, count);
+            }
+            
+            const result = [...techColors];
+            for (let i = techColors.length; i < count; i++) {
+                // 生成科技感渐变色
+                const hue = (i * 137.508) % 360; // 使用黄金角分布
+                const color = `hsl(${hue}, 70%, 60%)`;
+                result.push(color);
+            }
+            
+            return result;
+        }
+        
+        // 渲染表格页面
+        function renderTablePage(page) {
+            // 清空表格
+            tableBody.innerHTML = '';
+            
+            // 计算起始索引
+            const startIndex = (page - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, filteredPositions.length);
+            const pagePositions = filteredPositions.slice(startIndex, endIndex);
+            
+            // 如果没有数据，显示空状态
+            if (pagePositions.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td colspan="8" style="text-align: center; padding: 40px;">
+                        暂无仓位数据
+                    </td>
+                `;
+                tableBody.appendChild(row);
+                return;
+            }
+            
+            // 填充表格行
+            pagePositions.forEach(position => {
+                const row = document.createElement('tr');
+                
+                // 构建市场标题
+                let marketTitle = '';
+                if (position.rootMarketTitle) {
+                    marketTitle = `${position.rootMarketTitle} ---- ${position.marketTitle}`;
+                } else {
+                    marketTitle = position.marketTitle;
+                }
+                
+                // 构建链接
+                let link = '';
+                if (position.rootMarketId && position.rootMarketId !== 0) {
+                    link = `https://app.opinion.trade/detail?topicId=${position.rootMarketId}&type=multi`;
+                } else {
+                    link = `https://app.opinion.trade/detail?topicId=${position.marketId}`;
+                }
+                
+                // 格式化数值
+                const value = parseFloat(position.currentValueInQuoteToken).toFixed(2);
+                const shares = parseFloat(position.sharesOwned).toFixed(2);
+                const frozen = parseFloat(position.sharesFrozen).toFixed(2);
+                const avgPrice = (parseFloat(position.avgEntryPrice) * 100).toFixed(2);
+                const pnl = parseFloat(position.unrealizedPnl).toFixed(2);
+                const pnlPercent = (parseFloat(position.unrealizedPnlPercent) * 100).toFixed(1);
+                
+                // 确定盈亏颜色
+                const pnlClass = parseFloat(position.unrealizedPnl) >= 0 ? 'positive' : 'negative';
+                const pnlSign = parseFloat(position.unrealizedPnl) >= 0 ? '+' : '';
+                const pnlPercentSign = parseFloat(position.unrealizedPnlPercent) >= 0 ? '+' : '';
+                
+                // 确定方向颜色
+                let outcomeClass = 'outcome-unknown';
+                let outcomeText = position.outcome || '未知';
+                
+                if (position.outcome && position.outcome.toLowerCase() === 'yes') {
+                    outcomeClass = 'outcome-yes';
+                } else if (position.outcome && position.outcome.toLowerCase() === 'no') {
+                    outcomeClass = 'outcome-no';
+                }
+                
+                row.innerHTML = `
+                    <td class="market-title-col">
+                        <a href="${link}" target="_blank" class="market-title" title="${marketTitle}">
+                            ${marketTitle}
+                        </a>
+                    </td>
+                    <td class="outcome-col ${outcomeClass}">${outcomeText}</td>
+                    <td class="value-col">$${value}</td>
+                    <td class="shares-col">${shares}</td>
+                    <td class="frozen-col">${frozen}</td>
+                    <td class="avg-price-col">${avgPrice}¢</td>
+                    <td class="pnl-col ${pnlClass}">${pnlSign}$${pnl}</td>
+                    <td class="pnl-percent-col ${pnlClass}">${pnlPercentSign}${pnlPercent}%</td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // 渲染分页
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredPositions.length / itemsPerPage);
+            
+            // 清空分页
+            pagination.innerHTML = '';
+            
+            // 如果只有一页，不显示分页
+            if (totalPages <= 1) return;
+            
+            // 添加上一页按钮
+            const prevButton = document.createElement('button');
+            prevButton.textContent = '上一页';
+            prevButton.classList.add('page-btn');
+            prevButton.disabled = currentPage === 1;
+            prevButton.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderTablePage(currentPage);
+                    renderPagination();
+                }
+            });
+            pagination.appendChild(prevButton);
+            
+            // 添加页码按钮
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            
+            // 调整起始页，确保显示maxVisiblePages个页码
+            if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+            
+            // 第一页
+            if (startPage > 1) {
+                const firstButton = document.createElement('button');
+                firstButton.textContent = '1';
+                firstButton.classList.add('page-btn');
+                firstButton.addEventListener('click', () => {
+                    currentPage = 1;
+                    renderTablePage(currentPage);
+                    renderPagination();
+                });
+                pagination.appendChild(firstButton);
+                
+                // 添加省略号
+                if (startPage > 2) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.textContent = '...';
+                    ellipsis.style.padding = '0 8px';
+                    ellipsis.style.color = 'var(--secondary-text)';
+                    pagination.appendChild(ellipsis);
+                }
+            }
+            
+            // 中间页码
+            for (let i = startPage; i <= endPage; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.textContent = i;
+                pageButton.classList.add('page-btn');
+                if (i === currentPage) {
+                    pageButton.classList.add('active');
+                }
+                pageButton.addEventListener('click', () => {
+                    currentPage = i;
+                    renderTablePage(currentPage);
+                    renderPagination();
+                });
+                pagination.appendChild(pageButton);
+            }
+            
+            // 最后一页
+            if (endPage < totalPages) {
+                // 添加省略号
+                if (endPage < totalPages - 1) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.textContent = '...';
+                    ellipsis.style.padding = '0 8px';
+                    ellipsis.style.color = 'var(--secondary-text)';
+                    pagination.appendChild(ellipsis);
+                }
+                
+                const lastButton = document.createElement('button');
+                lastButton.textContent = totalPages;
+                lastButton.classList.add('page-btn');
+                lastButton.addEventListener('click', () => {
+                    currentPage = totalPages;
+                    renderTablePage(currentPage);
+                    renderPagination();
+                });
+                pagination.appendChild(lastButton);
+            }
+            
+            // 添加下一页按钮
+            const nextButton = document.createElement('button');
+            nextButton.textContent = '下一页';
+            nextButton.classList.add('page-btn');
+            nextButton.disabled = currentPage === totalPages;
+            nextButton.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderTablePage(currentPage);
+                    renderPagination();
+                }
+            });
+            pagination.appendChild(nextButton);
+        }
+        
+        // 清除数据
+        clearDataBtn.addEventListener('click', () => {
+            apiKeyInput.value = '';
+            walletAddressInput.value = '';
+            filterAmountInput.value = '';
+            allPositions = [];
+            filteredPositions = [];
+            currentPage = 1;
+            filterAmount = 0;
+            pageSizeSelect.value = '10'; // 重置为默认值
+            itemsPerPage = 10;
+            
+            // 隐藏数据区域
+            dataSection.style.display = 'none';
+            loadingIndicator.classList.remove('active');
+            errorMessage.classList.remove('active');
+            
+            // 显示空状态
+            emptyState.style.display = 'block';
+            
+            // 清空表格
+            tableBody.innerHTML = '';
+            pagination.innerHTML = '';
+            
+            // 销毁图表
+            if (positionChart) {
+                positionChart.destroy();
+                positionChart = null;
+            }
+        });
+        
+        // 页面加载时，尝试从localStorage恢复数据
+        window.addEventListener('DOMContentLoaded', () => {
+            // 尝试恢复主题设置
+            const savedTheme = localStorage.getItem('portfolio-theme');
+            if (savedTheme === 'dark') {
+                isDarkTheme = true;
+                document.body.classList.add('dark-theme');
+                themeIcon.textContent = '☀️';
+                themeText.textContent = '浅色模式';
+            }
+            
+            // 尝试恢复输入内容
+            const savedApiKey = localStorage.getItem('portfolio-apiKey');
+            const savedWallet = localStorage.getItem('portfolio-wallet');
+            
+            if (savedApiKey) apiKeyInput.value = savedApiKey;
+            if (savedWallet) walletAddressInput.value = savedWallet;
+            
+            // 保存输入内容到localStorage
+            apiKeyInput.addEventListener('input', () => {
+                localStorage.setItem('portfolio-apiKey', apiKeyInput.value);
+            });
+            
+            walletAddressInput.addEventListener('input', () => {
+                localStorage.setItem('portfolio-wallet', walletAddressInput.value);
+            });
+        });
+        
+        // 添加示例数据填充功能（用于演示）
+        document.addEventListener('keydown', (e) => {
+            // 按Ctrl+D填充示例数据
+            if (e.ctrlKey && e.key === 'd') {
+                e.preventDefault();
+                apiKeyInput.value = 'ABCabcXXXXXXXXXXXXXXXXXXXXXXXXXX';
+                walletAddressInput.value = '0x6888888888888888888888888888888888888888';
+            }
+        });
+    </script>
+</body>
+</html>
