@@ -5,7 +5,7 @@ opinion 仓位辅助管理系统
 <img width="600" alt="image" src="https://github.com/user-attachments/assets/b6db15b0-cad5-4591-b5a8-5bde8b3b4d32" />
 <img width="600" alt="image" src="https://github.com/user-attachments/assets/dd625a8a-0a2d-4257-be25-46c023745ede" />
 
-## 2、通过申请的apikey + 自己的钱包使用
+## 2、通过申请的apikey + 自己的钱包使用（这是一个html文件，电脑下载后，可以直接双击打开，或者右键使用浏览器打开）
 ### 展示按金额由大到小展示
 ### 可过滤指定金额，只展示大于此金额的仓位
 
